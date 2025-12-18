@@ -18,7 +18,8 @@ from faster_whisper import WhisperModel
 # -----------------------------
 # 1. GEMINI CONFIG
 # -----------------------------
-import google.generativeai as genai
+from google import genai
+
 
 # Hardcoded Gemini API key (replace with your own if needed)
 GEMINI_API_KEY = "AIzaSyBGovq2YGoPrJvO0bGa4froAKCE9crtgvM"
@@ -38,8 +39,7 @@ if not GEMINI_API_KEY:
 
 # Gemini setup
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    GEMINI_MODEL = genai.GenerativeModel(GEMINI_MODEL_NAME)
+    client = genai.Client(api_key=GEMINI_API_KEY)
     print(f" Gemini initialized with model: {GEMINI_MODEL_NAME}")
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini: {e}")
