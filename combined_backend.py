@@ -22,7 +22,11 @@ from google import genai
 
 
 # Hardcoded Gemini API key (replace with your own if needed)
-GEMINI_API_KEY = "AIzaSyBGovq2YGoPrJvO0bGa4froAKCE9crtgvM"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise RuntimeError("Gemini API key is missing. Set GEMINI_API_KEY env var.")
+
 GEMINI_MODEL_NAME = "models/gemini-2.5-flash-lite"
 GEMINI_MAX_TOKENS = 1200
 GEMINI_TEMPERATURE = 0.0
@@ -58,6 +62,13 @@ app.add_middleware(
 )
 
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
+@app.exception_handler(Exception)
+async def all_exception_handler(request, exc):
+    logging.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse({"error": "Internal Server Error"}, status_code=500)
 # -----------------------------
 # 3. PYDANTIC MODELS
 # -----------------------------
@@ -627,55 +638,66 @@ async def summarize_meeting(
     meeting_title: Optional[str] = Form(None),
     target_lang: Optional[str] = Form(None),
 ):
-    """
-    Main endpoint for meeting summarization:
-    - Transcribe audio
-    - Extract structured summary (Gemini + fallback)
-    - Generate follow-up email + WhatsApp message
-    - Optionally translate summary if target_lang is provided
-    - Return diarization + speaker list
-    """
     # Save uploaded file to temp
-    tmp_path = Path(tempfile.gettempdir()) / f"up_{audio.filename}"
-
-    with open(tmp_path, "wb") as f:
-        while True:
-            chunk = await audio.read(1024 * 1024)
-            if not chunk:
-                break
-            f.write(chunk)
+    try:
+        tmp_path = Path(tempfile.gettempdir()) / f"up_{audio.filename}"
+        with open(tmp_path, "wb") as f:
+            while True:
+                chunk = await audio.read(1024 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
+    except Exception as e:
+        print("❌ Failed saving upload:", e)
+        raise HTTPException(status_code=500, detail=f"Upload save failed: {e}")
 
     if not tmp_path.exists():
         raise HTTPException(status_code=400, detail="Failed to save uploaded file.")
 
     try:
-        wav_path = convert_to_wav(tmp_path)
-        transcript, diarization = transcribe_audio(wav_path)
+        # convert to wav
+        try:
+            wav_path = convert_to_wav(tmp_path)
+        except Exception as e:
+            print("❌ convert_to_wav error:", e)
+            raise HTTPException(status_code=500, detail=f"Audio conversion failed: {e}")
+
+        # transcribe
+        try:
+            transcript, diarization = transcribe_audio(wav_path)
+        except Exception as e:
+            print("❌ transcribe_audio error:", e)
+            raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
 
         if not transcript.strip():
             raise HTTPException(status_code=400, detail="Transcription is empty.")
 
-        note = ""
+        # structured extraction
         try:
             extracted = gemini_extract_structured(transcript)
         except Exception as e:
-            # Fallback to local extractor if Gemini fails
-            note = f"Note: Gemini failed, using local extraction instead. ({e})"
+            print("⚠️ Gemini structured extract failed:", e)
             extracted = local_extract(transcript)
 
-        # Extra Gemini features
-        summary_text = extracted.get("summary", "")
-        tasks = extracted.get("tasks", [])
+        # generate email/whatsapp
+        try:
+            summary_text = extracted.get("summary", "")
+            tasks = extracted.get("tasks", [])
+            followup_email = gemini_generate_followup_email(summary_text, tasks, meeting_title or "")
+            whatsapp_msg = gemini_generate_whatsapp(summary_text)
+        except Exception as e:
+            print("⚠️ Email/WhatsApp generation failed:", e)
+            followup_email = ""
+            whatsapp_msg = ""
 
-        followup_email = gemini_generate_followup_email(summary_text, tasks, meeting_title or "")
-        whatsapp_msg = gemini_generate_whatsapp(summary_text)
+        translated_summary = None
+        if target_lang:
+            try:
+                translated_summary = gemini_translate_summary(summary_text, target_lang)
+            except Exception as e:
+                print("⚠️ Translation failed:", e)
+                translated_summary = None
 
-        # Multi-language support
-        translated_summary: Optional[str] = None
-        if target_lang and target_lang.lower() not in ["none", "original", "auto"]:
-            translated_summary = gemini_translate_summary(summary_text, target_lang)
-
-        # Formatted markdown summary
         structured_markdown = format_markdown_block(
             extracted,
             followup_email=followup_email,
@@ -696,25 +718,24 @@ async def summarize_meeting(
             "whatsapp": whatsapp_msg,
             "translated_summary": translated_summary,
             "target_lang": target_lang,
-            "note": note,
         }
 
     finally:
-        # Cleanup
+        # cleanup
         try:
             if tmp_path.exists():
                 tmp_path.unlink()
             if "wav_path" in locals() and wav_path.exists():
                 wav_path.unlink()
-        except Exception:
-            pass
+        except Exception as e:
+            print("⚠️ Cleanup error:", e)
+
 
 
 # -----------------------------
 # 12. RUN SERVER
 # -----------------------------
-if __name__ == "__main__":
-    import uvicorn
+
 
     print("=" * 60)
     print(" Smart Meeting Assistant Backend")
@@ -723,5 +744,14 @@ if __name__ == "__main__":
     print(f" Docs: http://0.0.0.0:8000/docs")
     print(f" AI Model: {GEMINI_MODEL_NAME}")
     print("=" * 60)
-    
-    uvicorn.run("combined_backend:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(
+        "combined_backend:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+        log_level="info"
+    )
+
