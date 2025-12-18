@@ -18,20 +18,11 @@ from faster_whisper import WhisperModel
 # -----------------------------
 # 1. GEMINI CONFIG
 # -----------------------------
-from google_genai import Client
+import google.generativeai as genai
 
-# Get the API key from environment variables
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-
-if not GEMINI_API_KEY:
-    raise RuntimeError("No Gemini API key provided. Please set GEMINI_API_KEY in environment.")
-
-GEMINI_MODEL_NAME = "gemini-2.5-flash-lite"
-
-# Initialize the client
-client = Client(api_key=GEMINI_API_KEY)
-print(f"Gemini initialized with model: {GEMINI_MODEL_NAME}")
-
+# Hardcoded Gemini API key (replace with your own if needed)
+GEMINI_API_KEY = "AIzaSyBGovq2YGoPrJvO0bGa4froAKCE9crtgvM"
+GEMINI_MODEL_NAME = "models/gemini-2.5-flash-lite"
 GEMINI_MAX_TOKENS = 1200
 GEMINI_TEMPERATURE = 0.0
 
@@ -275,16 +266,13 @@ Transcript:
 """
 
     try:
-        response = client.generate(
-            model=GEMINI_MODEL_NAME,
-            input=prompt,
-            temperature=0.2,
-            max_output_tokens=2048
+        response = GEMINI_MODEL.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.1,
+                "max_output_tokens": GEMINI_MAX_TOKENS,
+            },
         )
-        return response.text or ""
-    except Exception as e:
-        return f"⚠️ Gemini Error: {e}"
-
         content = response.text or ""
 
         # Try to isolate JSON object
