@@ -1,0 +1,12 @@
+streamlit
+st-audiorec
+requests
+fastapi
+uvicorn
+pydub
+faster-whisper
+google-generativeai
+python-multipart
+pyarrow
+
+
