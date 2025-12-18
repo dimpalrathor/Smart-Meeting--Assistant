@@ -283,14 +283,15 @@ Transcript:
 """
 
     try:
-        response = GEMINI_MODEL.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.1,
-                "max_output_tokens": GEMINI_MAX_TOKENS,
-            },
+       response = client.generate_text(
+            model=GEMINI_MODEL_NAME,
+            input=prompt,
+            max_output_tokens=GEMINI_MAX_TOKENS,
+            temperature=0.1,
         )
+
         content = response.text or ""
+
 
         # Try to isolate JSON object
         start = content.find("{")
@@ -350,14 +351,14 @@ Return only the email body text (no markdown, no JSON).
 """
 
     try:
-        resp = GEMINI_MODEL.generate_content(
-            prompt,
-            generation_config={
-                "temperature": GEMINI_TEMPERATURE,
-                "max_output_tokens": GEMINI_MAX_TOKENS,
-            },
+        resp = client.generate_text(
+            model=GEMINI_MODEL_NAME,
+            input=prompt,
+            max_output_tokens=GEMINI_MAX_TOKENS,
+            temperature=GEMINI_TEMPERATURE,
         )
         return (resp.text or "").strip()
+
     except Exception as e:
         return f"Email generation failed: {e}"
 
@@ -384,14 +385,14 @@ MEETING SUMMARY:
 Return only the message text.
 """
     try:
-        resp = GEMINI_MODEL.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.2,
-                "max_output_tokens": 300,
-            },
+        resp = client.generate_text(
+            model=GEMINI_MODEL_NAME,
+            input=prompt,
+            max_output_tokens=300,
+            temperature=0.2,
         )
         return (resp.text or "").strip()
+
     except Exception as e:
         return f"WhatsApp summary failed: {e}"
 
@@ -417,13 +418,13 @@ SUMMARY:
 """
 
     try:
-        resp = GEMINI_MODEL.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.0,
-                "max_output_tokens": 400,
-            },
+        resp = client.generate_text(
+            model=GEMINI_MODEL_NAME,
+            input=prompt,
+            max_output_tokens=400,
+            temperature=0.0,
         )
+
         text = (resp.text or "").strip()
         return text or summary
     except Exception:
@@ -436,13 +437,13 @@ SUMMARY:
 def run_gemini_preparation(prompt: str) -> str:
     """Run Gemini for meeting preparation tasks."""
     try:
-        response = GEMINI_MODEL.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.2,
-                "max_output_tokens": 2048,
-            },
-        )
+        response = client.generate_text(
+                        model=GEMINI_MODEL_NAME,
+                        input=prompt,
+                        max_output_tokens=...,
+                        temperature=...
+                    )
+
         if hasattr(response, "text") and response.text:
             return response.text.strip()
         
