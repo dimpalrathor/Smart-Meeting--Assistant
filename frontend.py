@@ -261,6 +261,7 @@ st.markdown(f"""
     <span style='color: {api_color}; font-weight: 700; font-size: 1.1rem;'>{api_status}</span>
 </div>
 """, unsafe_allow_html=True)
+nav1, nav2, nav3, nav4 = st.columns(4)
 
 with nav1:
     if st.button(" Plan", key="nav_plan"): st.session_state.step = 1; st.rerun()
