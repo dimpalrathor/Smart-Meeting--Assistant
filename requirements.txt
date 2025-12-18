@@ -4,7 +4,6 @@ fastapi
 uvicorn
 pydub
 faster-whisper
-google-generativeai
 google-genai
 python-multipart
 pyarrow
