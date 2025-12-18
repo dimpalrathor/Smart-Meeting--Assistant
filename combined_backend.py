@@ -48,6 +48,12 @@ try:
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini: {e}")
 
+try:
+    GEMINI_MODEL = client.models.get(model=GEMINI_MODEL_NAME)
+    print(f"Gemini model loaded: {GEMINI_MODEL_NAME}")
+except Exception as e:
+    print("Failed to load Gemini model:", e)
+    GEMINI_MODEL = None
 
 # -----------------------------
 # 2. FASTAPI APP
