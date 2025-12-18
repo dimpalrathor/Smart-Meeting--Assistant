@@ -262,15 +262,15 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-nav1, nav2, nav3, nav4 = st.columns(4)
 with nav1:
-    if st.button(" Plan"): st.session_state.step = 1; st.rerun()
+    if st.button(" Plan", key="nav_plan"): st.session_state.step = 1; st.rerun()
 with nav2:
-    if st.button(" Prepare"): st.session_state.step = 2; st.rerun()
+    if st.button(" Prepare", key="nav_prepare"): st.session_state.step = 2; st.rerun()
 with nav3:
-    if st.button(" Record"): st.session_state.step = 3; st.rerun()
+    if st.button(" Record", key="nav_record"): st.session_state.step = 3; st.rerun()
 with nav4:
-    if st.button(" Analyze"): st.session_state.step = 4; st.rerun()
+    if st.button(" Analyze", key="nav_analyze"): st.session_state.step = 4; st.rerun()
+
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -290,8 +290,9 @@ if st.session_state.step == 1:
         focus = st.text_area(" Focus Areas", height=120)
         
         c1, c2 = st.columns([3, 1])
-        with c1: save = st.form_submit_button(" Save Plan")
-        with c2: skip = st.form_submit_button(" Skip")
+        with c1: save = st.form_submit_button(" Save Plan", key="form_save_plan")
+        with c2: skip = st.form_submit_button(" Skip", key="form_skip_plan")
+
     
     if save:
         st.session_state.meeting_plan = {"company_name": company, "title": title, "objective": objective, 
@@ -313,7 +314,8 @@ elif st.session_state.step == 2:
     
     if not gemini_api_key:
         st.warning(" Enter Gemini API key in sidebar")
-        if st.button("Skip"): st.session_state.step = 3; st.rerun()
+        if st.button("Skip", key="prep_skip"): st.session_state.step = 3; st.rerun()
+
     else:
         os.environ["GEMINI_API_KEY"] = gemini_api_key
         if serper_api_key: os.environ["SERPER_API_KEY"] = serper_api_key
@@ -329,7 +331,7 @@ elif st.session_state.step == 2:
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button(" Generate Preparation"):
+        if st.button(" Generate Preparation", key="prep_generate"):
             with st.spinner(" Preparing..."):
                 def run_gemini(prompt):
                     try:
@@ -358,7 +360,8 @@ elif st.session_state.step == 2:
             with t2: st.markdown(prep["strategy"])
             with t3: st.markdown(prep["brief"])
             
-            if st.button(" Next"): st.session_state.step = 3; st.rerun()
+            if st.button(" Next", key="prep_next"): st.session_state.step = 3; st.rerun()
+
 
 elif st.session_state.step == 3:
     st.markdown("<h2> Step 3: Record Meeting</h2>", unsafe_allow_html=True)
@@ -418,18 +421,20 @@ elif st.session_state.step == 3:
     
     if audio_bytes:
         st.session_state.audio_data = {"bytes": audio_bytes, "filename": filename}
-        if st.button(" Analyze"): st.session_state.step = 4; st.rerun()
+        if st.button(" Analyze", key="record_analyze"): st.session_state.step = 4; st.rerun()
+
 
 elif st.session_state.step == 4:
     st.markdown("<h2> Step 4: AI Summary</h2>", unsafe_allow_html=True)
     
     if not st.session_state.audio_data:
         st.error(" No audio found")
-        if st.button("← Back"): st.session_state.step = 3; st.rerun()
+        if st.button("← Back", key="summary_back"): st.session_state.step = 3; st.rerun()
+
     else:
         audio_info = st.session_state.audio_data
         
-        if st.button(" Generate Summary"):
+        if st.button(" Generate Summary", key="summary_generate"):
             with st.spinner(" Analyzing..."):
                 try:
                     files = {"audio": (audio_info["filename"], audio_info["bytes"], "audio/wav")}
@@ -506,7 +511,7 @@ elif st.session_state.step == 4:
                 diar = data.get("diarization", [])
                 if diar: st.json(diar)
             
-            if st.button(" New Meeting"):
+            if st.button(" New Meeting", key="new_meeting"):
                 for k in list(st.session_state.keys()): del st.session_state[k]
                 st.session_state.step = 1
                 st.rerun()
