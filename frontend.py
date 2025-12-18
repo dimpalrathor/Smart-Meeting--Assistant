@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import os
-from google import genai
+import google.generativeai as genai
 
 BACKEND_URL = "http://localhost:8000/summarize"
 
