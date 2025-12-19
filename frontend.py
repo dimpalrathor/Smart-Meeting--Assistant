@@ -3,7 +3,7 @@ import requests
 import os
 from google import genai
 
-BACKEND_URL = "https://smart-meeting-assistant-edfi.onrender.com"
+BACKEND_URL = "https://smart-meeting-assistant-edfi.onrender.com/summarize"
 
 
 st.set_page_config(page_title="Smart Meeting Assistant", layout="wide", initial_sidebar_state="expanded")
@@ -439,8 +439,15 @@ elif st.session_state.step == 4:
         if st.button(" Generate Summary", key="summary_generate"):
             with st.spinner(" Analyzing..."):
                 try:
-                    files = {"audio": (audio_info["filename"], audio_info["bytes"], "audio/wav")}
-                    resp = requests.post(BACKEND_URL, files=files, timeout=600)
+                    files = {
+                        "audio": (audio_info["filename"], audio_info["bytes"])
+                    }
+                    resp = requests.post(
+                        f"{BACKEND_URL}/summarize",
+                        files=files,
+                        timeout=600
+                    )
+
                     
                     if resp.status_code == 200:
                         st.session_state.summary_data = resp.json()
