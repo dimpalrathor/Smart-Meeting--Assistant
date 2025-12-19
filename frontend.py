@@ -3,7 +3,7 @@ import requests
 import os
 from google import genai
 
-BACKEND_URL = "https://smart-meeting-assistant-edfi.onrender.com/summarize"
+BACKEND_URL = "https://smart-meeting-assistant-edfi.onrender.com"
 
 
 st.set_page_config(page_title="Smart Meeting Assistant", layout="wide", initial_sidebar_state="expanded")
